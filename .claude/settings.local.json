@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem -Recurse -Depth 4 -Directory | Select-Object -ExpandProperty FullName | ForEach-Object { $_.Replace\\(\"D:\\\\桌面\\\\dataBase_03\\\\\", \"\"\\) })",
+      "PowerShell(pip install *)",
+      "PowerShell(python -c \"import httpx; print\\('httpx version:', httpx.__version__\\)\")",
+      "PowerShell(python -c \"import ast; ast.parse\\(open\\('D:\\\\桌面\\\\dataBase_03\\\\dataBase\\\\src\\\\python\\\\finance_api_server.py', encoding='utf-8'\\).read\\(\\)\\); print\\('Syntax OK'\\)\")",
+      "PowerShell($file = Get-ChildItem -Path \"D:\\\\桌面\\\\dataBase_03\\\\dataBase\\\\src\\\\python\\\\finance_api_server.py\"; python -c \"import ast; ast.parse\\(open\\($file, encoding='utf-8'\\).read\\(\\)\\); print\\('Syntax OK'\\)\")",
+      "PowerShell(python -c \"import ast, sys; sys.path.insert\\(0, r'D:\\\\桌面\\\\dataBase_03\\\\dataBase\\\\src\\\\python'\\); f = r'D:\\\\桌面\\\\dataBase_03\\\\dataBase\\\\src\\\\python\\\\finance_api_server.py'; ast.parse\\(open\\(f, encoding='utf-8'\\).read\\(\\)\\); print\\('Syntax OK'\\)\")",
+      "PowerShell(scp *)",
+      "PowerShell(python -c \"import paramiko; print\\('paramiko', paramiko.__version__\\)\")",
+      "PowerShell(python \"D:\\\\桌面\\\\dataBase_03\\\\dataBase\\\\scripts\\\\deploy_to_ubuntu.py\")",
+      "PowerShell([Console]::OutputEncoding = [Text.Encoding]::UTF8; python \"D:\\\\桌面\\\\dataBase_03\\\\dataBase\\\\scripts\\\\deploy_to_ubuntu.py\")",
+      "PowerShell(Test-NetConnection *)",
+      "PowerShell(Start-Process -WindowStyle Minimized -FilePath python -ArgumentList \"-m\", \"http.server\", \"3000\" -WorkingDirectory \"D:\\\\桌面\\\\dataBase_03\\\\dataBase\\\\output\"; Start-Sleep 1; Write-Host \"HTTP server started on http://localhost:3000\"; Start-Process \"http://localhost:3000/finance_dashboard.html\")",
+      "PowerShell(python \"D:\\\\桌面\\\\dataBase_03\\\\dataBase\\\\scripts\\\\upload_spark.py\")",
+      "PowerShell(python \"D:\\\\桌面\\\\dataBase_03\\\\dataBase\\\\src\\\\python\\\\train_model.py\")"
+    ]
+  }
+}

@@ -1,0 +1,481 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=1440">
+<title>金融实时行情分析大屏</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<style>
+:root{--bg:#0a101e;--card:#111d35;--b:rgba(56,189,248,.15);--t:#b0bec5;--a:#4dc9f6;--g:#fbbf24;--gr:#34d399;--r:#fb7185}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:#e2e8f0;font-family:'Microsoft YaHei','PingFang SC',sans-serif;font-size:13px}
+#loading{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;transition:opacity .5s}
+#loading .r{width:44px;height:44px;border:2px solid rgba(56,189,248,.12);border-top-color:var(--a);border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+#loading p{color:var(--t);margin-top:16px;font-size:13px}
+.app{max-width:1440px;margin:0 auto;padding:8px 16px}
+.top{display:flex;align-items:center;justify-content:space-between;height:48px;padding:0 20px;margin-bottom:10px;background:linear-gradient(135deg,var(--card),rgba(56,189,248,.05));border:1px solid var(--b);border-radius:10px}
+.top .lo{font-size:16px;font-weight:700;letter-spacing:1px;color:#fff}
+.top .lo span{color:var(--a);text-shadow:0 0 10px rgba(77,201,246,.4)}
+.top .in{display:flex;gap:20px;font-size:11px;color:var(--t);align-items:center}
+.top .in b{color:#e2e8f0;font-weight:600}
+.sd{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:4px}
+.sd.on{background:var(--gr);box-shadow:0 0 8px var(--gr)}
+.sd.off{background:var(--r)}
+.row{display:grid;gap:10px;margin-bottom:10px}
+.c5{grid-template-columns:repeat(5,1fr)}.c2{grid-template-columns:2fr 1fr}.c3{grid-template-columns:1fr 1fr 1fr}.c1{grid-template-columns:1fr}
+.c{background:var(--card);border:1px solid var(--b);border-radius:10px;padding:14px;transition:all .3s}
+.c:hover{border-color:rgba(56,189,248,.35);box-shadow:0 0 20px rgba(56,189,248,.06)}
+.ch{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--t);margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--b);letter-spacing:.5px}
+.ch .do{width:3px;height:13px;background:var(--a);border-radius:2px;box-shadow:0 0 6px rgba(77,201,246,.5)}
+.ch b{color:#fff}
+.cv{width:100%}
+.pc{text-align:center;padding:16px 8px;cursor:pointer;border-radius:10px;border:1px solid var(--b);background:var(--card);transition:all .2s}
+.pc:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(56,189,248,.15)}
+.pc.sel{background:rgba(56,189,248,.08);border-color:rgba(56,189,248,.35);box-shadow:0 0 25px rgba(56,189,248,.1)}
+.pc .sy{font-size:11px;color:var(--t);margin-bottom:8px}
+.pc .va{font-size:26px;font-weight:700;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.pc .cg{font-size:11px;padding:2px 7px;border-radius:3px;display:inline-block;font-weight:600}
+.cg.up{background:rgba(16,185,129,.1);color:var(--gr)}.cg.dn{background:rgba(244,63,94,.1);color:var(--r)}
+.pc .su{font-size:10px;color:#475569;margin-top:6px;line-height:1.5}
+.sr{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.st{text-align:center;padding:10px 6px;background:rgba(56,189,248,.03);border-radius:8px;border:1px solid var(--b)}
+.st .n{font-size:15px;font-weight:700;color:var(--a)}.st .l{font-size:10px;color:var(--t);margin-top:2px}
+.tb{width:100%;font-size:10px;border-collapse:collapse;margin-top:6px}
+.tb th{background:rgba(56,189,248,.06);color:var(--a);padding:6px 8px;text-align:left;font-weight:500}
+.tb td{padding:4px 8px;border-bottom:1px solid var(--b);color:#cbd5e1;font-variant-numeric:tabular-nums}
+.bd{display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600}
+.bd.up{background:rgba(16,185,129,.12);color:var(--gr)}.bd.dn{background:rgba(244,63,94,.12);color:var(--r)}
+.bd.hi{background:rgba(245,158,11,.12);color:var(--g);margin-left:4px}
+.sch{display:flex;gap:8px;margin-bottom:10px}
+.sch input{flex:1;padding:6px 10px;background:rgba(8,13,21,.8);border:1px solid var(--b);border-radius:6px;color:#e2e8f0;font-size:11px}
+.sch button{padding:6px 14px;background:var(--a);border:none;border-radius:6px;color:#fff;font-size:11px;cursor:pointer;font-weight:600}
+.sch button:hover{opacity:.9}
+/* ===== AI Chat Widget ===== */
+.ai-chat-btn{position:fixed;right:24px;bottom:24px;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#38bdf8,#8b5cf6);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1000;box-shadow:0 4px 20px rgba(56,189,248,.35);transition:all .25s}
+.ai-chat-btn:hover{transform:scale(1.08);box-shadow:0 6px 30px rgba(56,189,248,.5)}
+.ai-chat-btn svg{width:26px;height:26px;fill:#fff}
+.ai-chat-panel{position:fixed;right:24px;bottom:88px;width:390px;height:540px;background:var(--card);border:1px solid var(--b);border-radius:14px;display:flex;flex-direction:column;z-index:1001;box-shadow:0 12px 50px rgba(0,0,0,.5);overflow:hidden;transition:all .25s}
+.ai-chat-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(56,189,248,.06);border-bottom:1px solid var(--b);font-size:13px;font-weight:600;color:#e2e8f0}
+.ai-chat-header button{background:none;border:none;color:var(--t);cursor:pointer;font-size:16px;padding:2px 6px;border-radius:4px;transition:all .15s}
+.ai-chat-header button:hover{color:#e2e8f0;background:rgba(56,189,248,.1)}
+.ai-chat-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.ai-chat-body::-webkit-scrollbar{width:4px}
+.ai-chat-body::-webkit-scrollbar-thumb{background:rgba(56,189,248,.15);border-radius:2px}
+.ai-msg{max-width:85%;padding:10px 14px;border-radius:12px;font-size:12px;line-height:1.7;word-break:break-word;white-space:pre-wrap}
+.ai-msg.assistant{align-self:flex-start;background:rgba(56,189,248,.06);border:1px solid rgba(56,189,248,.12);color:#cbd5e1;border-bottom-left-radius:4px}
+.ai-msg.user{align-self:flex-end;background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.2);color:#e2e8f0;border-bottom-right-radius:4px}
+.ai-typing{align-self:flex-start;padding:10px 14px;border-radius:12px;background:rgba(56,189,248,.06);border:1px solid rgba(56,189,248,.12);border-bottom-left-radius:4px;display:flex;gap:5px;align-items:center}
+.ai-typing span{width:6px;height:6px;border-radius:50%;background:var(--a);animation:aiBounce 1.2s infinite}
+.ai-typing span:nth-child(2){animation-delay:.2s}
+.ai-typing span:nth-child(3){animation-delay:.4s}
+@keyframes aiBounce{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-8px);opacity:1}}
+.ai-chat-input{display:flex;padding:10px 12px;border-top:1px solid var(--b);gap:8px}
+.ai-chat-input input{flex:1;padding:8px 12px;background:rgba(8,13,21,.8);border:1px solid var(--b);border-radius:8px;color:#e2e8f0;font-size:12px;outline:none;transition:border-color .2s}
+.ai-chat-input input:focus{border-color:rgba(56,189,248,.4)}
+.ai-chat-input button{padding:8px 16px;background:linear-gradient(135deg,#38bdf8,#8b5cf6);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}
+.ai-chat-input button:hover{opacity:.9;transform:translateY(-1px)}
+.ai-chat-input button:disabled{opacity:.5;cursor:not-allowed;transform:none}
+/* API Key Modal */
+.ai-modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;z-index:2000}
+.ai-modal-content{background:var(--card);border:1px solid var(--b);border-radius:14px;padding:24px;width:380px;box-shadow:0 12px 50px rgba(0,0,0,.5)}
+.ai-modal-content h3{font-size:15px;color:#e2e8f0;margin-bottom:16px;font-weight:600}
+.ai-modal-content input{width:100%;padding:10px 14px;background:rgba(8,13,21,.8);border:1px solid var(--b);border-radius:8px;color:#e2e8f0;font-size:12px;margin-bottom:16px;outline:none}
+.ai-modal-content input:focus{border-color:rgba(56,189,248,.4)}
+.ai-modal-content .btns{display:flex;gap:10px;justify-content:flex-end}
+.ai-modal-content .btns button{padding:8px 20px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .2s}
+.ai-modal-content .btns .btn-save{background:linear-gradient(135deg,#38bdf8,#8b5cf6);color:#fff}
+.ai-modal-content .btns .btn-cancel{background:rgba(56,189,248,.06);color:var(--t)}
+.ai-modal-content .btns button:hover{opacity:.9}
+.ai-modal-content .hint{font-size:10px;color:#64748b;margin-top:10px;line-height:1.5}
+</style>
+</head>
+<body>
+<div id="loading"><div class="r"></div><p>连接数据服务中...</p></div>
+<div class="app">
+  <!-- 顶栏 -->
+  <div class="top">
+    <div class="lo"><span>◆</span> 金融实时行情分析大屏</div>
+    <div class="in">
+      <span><span class="sd on" id="led"></span><span id="stl">在线</span></span>
+      <span>更新 <b id="ts">--:--:--</b></span>
+      <span>品种 <b>5</b></span>
+      <span>Kafka·HDFS·Hive·ES</span>
+	      <span><span class="sd on" id="sparkLed"></span>Spark <b id="sparkApps">--</b></span>
+    </div>
+  </div>
+  <!-- 5张行情卡片 -->
+  <div class="row c5" id="tiles"></div>
+  <!-- 趋势图 + 成交量 -->
+  <div class="row c2">
+    <div class="c"><div class="ch"><span class="do"></span> 实时价格趋势 · <b id="ttl">黄金期货</b></div><div class="cv" id="trend" style="height:360px"></div></div>
+    <div class="c"><div class="ch"><span class="do"></span> 成交量对比</div><div class="cv" id="vol" style="height:360px"></div></div>
+  </div>
+  <!-- 雷达 + 风险 -->
+  <div class="row c2">
+    <div class="c"><div class="ch"><span class="do"></span> 风险雷达图</div><div class="cv" id="radar" style="height:300px"></div></div>
+    <div class="c"><div class="ch"><span class="do"></span> 风险指标面板</div><div id="risk"></div></div>
+  </div>
+  <!-- Spark OHLC K线 + 统计 -->
+	  <div class="row c2">
+	    <div class="c"><div class="ch"><span class="do"></span> Spark K线图 <b id="ohlcTitle">黄金期货</b> <span class="bd hi">Spark OHLC</span></div><div class="cv" id="ohlcChart" style="height:340px"></div></div>
+	    <div class="c"><div class="ch"><span class="do"></span> Spark 作业状态</div><div id="sparkStat"></div></div>
+	  </div>
+	  ' + "`n" + $marker
+  <div class="row c3">
+    <div class="c">
+      <div class="ch"><span class="do"></span> 数据资产统计 <span class="bd hi">CSV+HDFS</span></div>
+      <div id="ods"></div>
+    </div>
+    <div class="c">
+      <div class="ch"><span class="do"></span> 数据预览 — <b id="pvn">黄金期货</b></div>
+      <div id="sample">加载中...</div>
+    </div>
+    <div class="c">
+      <div class="ch"><span class="do"></span> 价格区间搜索</div>
+      <div class="sch"><input id="kw" placeholder="例: 4100-4150 或 UP" value="4100-4120"><button onclick="doSearch()">搜索</button></div>
+      <div id="sr" style="max-height:160px;overflow-y:auto;font-size:10px"></div>
+    </div>
+  </div>
+  <!-- ML 价格预测 -->
+	  <div class="row c1">
+	    <div class="c"><div class="ch"><span class="do"></span> ML 价格方向预测 <span class="bd hi">GBoost+RF 集成</span> <span style="font-size:10px;color:var(--t);margin-left:8px">基于150万条CSV训练</span></div><div id="mlPanel" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">加载中...</div></div>
+	  </div>
+	  ' + "`n" + $marker
+  <div class="row c2">
+    <div class="c"><div class="ch"><span class="do"></span> 品种价格相关性矩阵 <span class="bd hi">Hive ODS</span></div><div class="cv" id="corrChart" style="height:300px"></div></div>
+    <div class="c"><div class="ch"><span class="do"></span> 最强相关配对</div><div id="corrPairs"></div></div>
+  </div>
+</div>
+<script>
+const A='http://192.168.128.130:8000/api',CFG={GOLD:{n:'黄金期货',u:'$/oz',c:'#f59e0b'},OIL:{n:'原油期货',u:'$/bbl',c:'#fb923c'},SILVER:{n:'白银期货',u:'$/oz',c:'#94a3b8'},COPPER:{n:'铜期货',u:'$/lb',c:'#f97316'},GAS:{n:'天然气期货',u:'$/mmBTU',c:'#38bdf8'}};
+let s='GOLD',f=1;
+const mc=echarts.init($('trend')),vc=echarts.init($('vol')),rc=echarts.init($('radar')),cc=echarts.init($('corrChart')),oc=echarts.init($('ohlcChart'));
+addEventListener('resize',()=>{mc.resize();vc.resize();rc.resize();cc.resize();oc.resize()});
+function $(id){return document.getElementById(id)}
+function F(v,d){return(v==null||isNaN(v))?'--':Math.abs(v)<10?v.toFixed(d||4):Math.abs(v)<100?v.toFixed(d||2):v.toFixed(1)}
+function fV(v){return(v==null||!v)?'--':v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(1)+'K':v.toFixed(0)}
+function fP(v){return(v==null||isNaN(v))?'--':(v>0?'+':'')+v.toFixed(2)+'%'}
+async function G(p){try{const r=await fetch(A+p);if(!r.ok)throw r.status;return r.json()}catch(e){return null}}
+
+async function tick(){
+  const[l,t,v,r,ods]=await Promise.all([G('/realtime/latest'),G('/realtime/trend?symbol='+s+'&minutes=4320'),G('/realtime/volume'),G('/realtime/risk'),G('/data/stats')]);
+  const ok=l&&l.data&&l.data.some(d=>d.price>0);
+  $('led').className='sd '+(ok?'on':'off');$('stl').textContent=ok?'在线':'离线';
+  if(l){$('ts').textContent=(l.update_time||'').substring(11,19)||'--:--:--';pTiles(l.data)}
+  if(t&&t.data)pTrend(t);
+  if(v&&v.data)pVol(v.data);
+  if(r&&r.data){pRadar(r.data);pRisk(r.data)}
+  if(ods&&ods.data)pOds(ods.data);
+  if(f&&ok){$('loading').style.opacity='0';setTimeout(()=>$('loading').style.display='none',500);f=0}
+  // 加载样本
+  const sm=await G('/data/sample?symbol='+s+'&limit=8');
+  if(sm&&sm.data)pSample(sm);
+  // Spark K线 + 状态 + ML预测
+  loadSparkOHLC();
+  loadSparkStatus();
+  loadML();
+}
+
+function pTiles(d){$('tiles').innerHTML=d.map(x=>{const c=x.price_change_pct>0?'up':x.price_change_pct<0?'dn':'';return`<div class="pc ${x.symbol===s?'sel':''}" onclick="pick('${x.symbol}')"><div class="sy">${CFG[x.symbol]?.n||x.symbol} <span class="bd ${c||'up'}">${x.direction||'--'}</span></div><div class="va" style="color:${CFG[x.symbol]?.c||'#fff'}">${x.price>0?F(x.price,2):'--'}</div><div class="cg ${c}">${fP(x.price_change_pct)}</div><div class="su">成交量 ${fV(x.volume)} · 价差 ${F(x.spread,4)}</div></div>`}).join('')}
+window.pick=function(v){s=v;tick()}
+
+function pTrend(d){$('ttl').textContent=CFG[s]?.n||s;const p=(d.data||[]).slice(-600),t=p.map(x=>(x.time||'').substring(11,19));mc.setOption({tooltip:{trigger:'axis',backgroundColor:'rgba(8,13,21,.96)',borderColor:'rgba(56,189,248,.2)',textStyle:{color:'#e2e8f0',fontSize:11}},grid:{left:'2%',right:'2%',top:'4%',bottom:'10%'},xAxis:{type:'category',data:t,axisLabel:{color:'#64748b',fontSize:9,interval:Math.max(1,Math.floor(t.length/8))}},yAxis:{type:'value',scale:1,splitLine:{lineStyle:{color:'rgba(56,189,248,.04)'}},axisLabel:{color:'#64748b',fontSize:9}},dataZoom:[{type:'inside',start:60,end:100}],series:[{type:'line',data:p.map(x=>x.price),smooth:1,symbol:'none',lineStyle:{width:2,color:'#38bdf8'},areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(56,189,248,.15)'},{offset:1,color:'rgba(56,189,248,0)'}])}}]},1)}
+
+function pVol(d){vc.setOption({tooltip:{trigger:'axis',backgroundColor:'rgba(8,13,21,.96)',borderColor:'rgba(56,189,248,.2)',textStyle:{color:'#e2e8f0',fontSize:11}},grid:{left:'6%',right:'4%',top:'4%',bottom:'8%'},xAxis:{type:'category',data:d.map(x=>CFG[x.symbol]?.n||x.name),axisLabel:{color:'#64748b',fontSize:10}},yAxis:{type:'value',splitLine:{lineStyle:{color:'rgba(56,189,248,.04)'}},axisLabel:{color:'#64748b',fontSize:9,formatter:fV}},series:[{type:'bar',barWidth:'40%',data:d.map(x=>({value:x.total_volume,itemStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:CFG[x.symbol]?.c||'#38bdf8'},{offset:1,color:'rgba(8,13,21,.2)'}]),borderRadius:[4,4,0,0]}}))}]},1)}
+
+// ---- Spark K线图 ----
+async function loadSparkOHLC(){
+  const d=await G('/spark/ohlc?symbol='+s+'&minutes=120');
+  $('ohlcTitle').textContent=CFG[s]?.n||s;
+  if(!d||!d.data||!d.data.length){oc.setOption({title:{text:'等待Spark数据...',left:'center',top:'center',textStyle:{color:'#64748b',fontSize:12}}});return}
+  const raw=d.data, cat=raw.map(x=>x.time);
+  const ohlc=raw.map(x=>[x.open,x.close,x.low,x.high]);
+  // SMA均线 (前端计算)
+  const sma=(n)=>{const r=[];for(let i=0;i<ohlc.length;i++){if(i<n-1){r.push(null);continue}let s=0;for(let j=i-n+1;j<=i;j++)s+=ohlc[j][1];r.push(+(s/n).toFixed(2))}return r};
+  oc.setOption({
+    tooltip:{trigger:'axis',backgroundColor:'rgba(8,13,21,.96)',borderColor:'rgba(56,189,248,.2)',textStyle:{color:'#e2e8f0',fontSize:11},
+      formatter:p=>{const i=p[0].dataIndex;return `${cat[i]}<br/>开 ${F(raw[i].open,2)}<br/>收 ${F(raw[i].close,2)}<br/>高 ${F(raw[i].high,2)}<br/>低 ${F(raw[i].low,2)}<br/>量 ${fV(raw[i].volume)}`}},
+    grid:{left:'8%',right:'2%',top:'4%',bottom:'10%'},
+    xAxis:{type:'category',data:cat,axisLabel:{color:'#64748b',fontSize:9,interval:Math.max(1,Math.floor(cat.length/6))}},
+    yAxis:{type:'value',scale:1,splitLine:{lineStyle:{color:'rgba(56,189,248,.04)'}},axisLabel:{color:'#64748b',fontSize:9}},
+    dataZoom:[{type:'inside',start:50,end:100}],
+    series:[
+      {type:'candlestick',data:ohlc,itemStyle:{color:'#ef4444',color0:'#22c55e',borderColor:'#ef4444',borderColor0:'#22c55e'}},
+      {type:'line',data:sma(5),smooth:1,symbol:'none',lineStyle:{width:1,color:'#f59e0b'},name:'SMA5'},
+      {type:'line',data:sma(10),smooth:1,symbol:'none',lineStyle:{width:1,color:'#8b5cf6'},name:'SMA10'}
+    ]
+  },1);
+}
+
+// ---- Spark 状态 ----
+async function loadSparkStatus(){
+  const d=await G('/spark/status');
+  const m=d&&d.master==='ALIVE';
+  $('sparkLed').className='sd '+(m?'on':'off');
+  $('sparkApps').textContent=d?d.active_apps:'--';
+  $('sparkStat').innerHTML=d?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <div class="st"><div class="n">${d.active_apps}</div><div class="l">活跃应用</div></div>
+    <div class="st"><div class="n">${d.completed_apps}</div><div class="l">已完成</div></div>
+    <div class="st"><div class="n">${d.workers}</div><div class="l">Worker节点</div></div>
+    <div class="st"><div class="n">${d.cores||0}</div><div class="l">总核数</div></div>
+    <div class="st"><div class="n">${(d.memory||0)}MB</div><div class="l">总内存</div></div>
+    <div class="st"><div class="n" style="color:${m?'var(--gr)':'var(--r)'}">${d.master||'NONE'}</div><div class="l">Master</div></div>
+  </div>`:'<div style="text-align:center;color:#64748b;padding:20px">等待 Spark 连接...</div>';
+}
+
+// ---- ML 价格方向预测 ----
+let mlPrev={};
+async function loadML(){
+  const syms=['GOLD','OIL','SILVER','COPPER','GAS'];
+  const results=await Promise.all(syms.map(sym=>G('/ml/predict?symbol='+sym)));
+  $('mlPanel').innerHTML=syms.map((sym,i)=>{
+    const d=results[i];
+    if(!d||d.prediction==='无模型') return `<div class="st"><div class="n" style="color:var(--t)">--</div><div class="l">${CFG[sym]?.n||sym}</div><div class="l">模型未加载</div></div>`;
+    const up=d.prediction==='UP',c=up?'var(--gr)':'var(--r)';
+    const pu=(d.prob_up*100).toFixed(1), pd=(d.prob_down*100).toFixed(1);
+    // 检测方向变化
+    const prev=mlPrev[sym]||'';
+    const changed=prev&&prev!==d.prediction;
+    mlPrev[sym]=d.prediction;
+    return `<div class="st" style="border-color:${up?'rgba(52,211,153,.3)':'rgba(251,113,133,.3)'};transition:all .3s">
+      <div class="n" style="color:${c};font-size:20px">${up?'▲':'▼'} ${d.prediction}${changed?'<span style="font-size:10px;color:var(--g);margin-left:4px">!</span>':''}</div>
+      <div class="l">${CFG[sym]?.n||sym}</div>
+      <div style="display:flex;gap:4px;margin:6px 0;align-items:center">
+        <div style="flex:1;height:3px;background:rgba(251,113,133,.2);border-radius:2px;overflow:hidden"><div style="height:100%;width:${pd}%;background:var(--r);border-radius:2px;transition:width .5s"></div></div>
+        <span style="font-size:9px;color:var(--r)">${pd}%</span>
+      </div>
+      <div style="display:flex;gap:4px;align-items:center">
+        <div style="flex:1;height:3px;background:rgba(52,211,153,.2);border-radius:2px;overflow:hidden"><div style="height:100%;width:${pu}%;background:var(--gr);border-radius:2px;transition:width .5s"></div></div>
+        <span style="font-size:9px;color:var(--gr)">${pu}%</span>
+      </div>
+      <div class="l" style="font-size:9px;color:#475569;margin-top:4px">置信 ${(d.confidence*100).toFixed(0)}% · 准确率 ${(d.accuracy*100).toFixed(0)}%</div>
+    </div>`;
+  }).join('');
+}
+
+function pRadar(d){rc.setOption({tooltip:{trigger:'item',backgroundColor:'rgba(8,13,21,.96)',textStyle:{color:'#e2e8f0',fontSize:11}},legend:{data:['波动率×10000','最大回撤%','价差×100'],bottom:0,textStyle:{color:'#64748b',fontSize:9}},radar:{center:['50%','44%'],radius:'50%',indicator:d.map(x=>({name:CFG[x.symbol]?.n||x.name,max:10})),axisName:{color:'#64748b',fontSize:8},splitLine:{lineStyle:{color:'rgba(56,189,248,.04)'}}},series:[{type:'radar',data:[{name:'波动率×10000',value:d.map(x=>(x.avg_volatility||0)*10000),lineStyle:{color:'#38bdf8',width:1},areaStyle:{color:'rgba(56,189,248,.04)'},symbol:'circle',symbolSize:3},{name:'最大回撤%',value:d.map(x=>x.max_drawdown_pct||0),lineStyle:{color:'#f43f5e',width:1},symbol:'diamond',symbolSize:3},{name:'价差×100',value:d.map(x=>(x.avg_spread||0)*100),lineStyle:{color:'#f59e0b',width:1},symbol:'circle',symbolSize:3}]}]},1)}
+
+function pRisk(d){$('risk').innerHTML='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">'+d.map(x=>`<div style="text-align:center;padding:12px 6px;background:rgba(56,189,248,.02);border-radius:8px;border:1px solid var(--b)"><div style="font-size:10px;color:${CFG[x.symbol]?.c||'#fff'};margin-bottom:4px">${CFG[x.symbol]?.n||x.name}</div><div style="font-size:20px;font-weight:700;color:var(--r)">${(x.max_drawdown_pct||0).toFixed(3)}%</div><div style="font-size:10px;color:var(--t)">最大回撤</div><div style="font-size:10px;color:var(--t);margin-top:6px">波动 ${(x.avg_volatility*100).toFixed(4)}% · 价差 ${F(x.avg_spread,4)}</div><div style="font-size:9px;color:#475569">${x.tick_count||0} 笔</div></div>`).join('')+'</div>'}
+
+function pOds(d){const ods=d.ods||{},hdfs=d.hdfs_files||0;
+  $('ods').innerHTML='<div style="font-size:20px;font-weight:700;text-align:center;color:var(--a);margin-bottom:8px">HDFS文件: '+hdfs+' 个</div><div class="sr">'+
+    Object.entries(ods).map(([k,v])=>`<div class="st"><div class="n">${fV(v.csv_rows)}</div><div class="l">${v.name} 条</div><div class="l">均价 ${F(v.avg_price,2)}</div></div>`).join('')+'</div>'+
+    '<div style="font-size:9px;color:#475569;text-align:center;margin-top:8px">源: CSV 25万条 + Spark→HDFS</div>'}
+
+function pSample(d){$('pvn').textContent=CFG[s]?.n||s;
+  $('sample').innerHTML='<table class="tb"><tr><th>时间</th><th>价格</th><th>成交量</th><th>方向</th><th>价差</th></tr>'+
+    d.data.map(x=>`<tr><td>${(x.timestamp||'').substring(11,19)}</td><td style="color:${CFG[s]?.c}">${F(x.price,2)}</td><td>${fV(x.volume)}</td><td><span class="bd ${x.direction==='UP'?'up':'dn'}">${x.direction}</span></td><td>${F(x.spread,4)}</td></tr>`).join('')+'</table>'}
+
+async function doSearch(){const kw=$('kw').value;$('sr').innerHTML='搜索中...';const r=await G('/data/search?keyword='+encodeURIComponent(kw)+'&limit=15');if(r&&r.data)$('sr').innerHTML=r.data.length+' 条结果'+r.data.map(x=>`<div style="padding:4px 0;border-bottom:1px solid var(--b)"><span style="color:${CFG[x.symbol]?.c}">${CFG[x.symbol]?.n}</span> ${F(x.price,2)} <span class="bd ${x.direction==='UP'?'up':'dn'}">${x.direction}</span> <span style="color:var(--t);font-size:9px">${(x.timestamp||'').substring(0,19)}</span></div>`).join('');else $('sr').innerHTML='无结果'}
+
+// 相关性分析 (每30秒更新一次)
+async function loadCorr(){
+  const d=await G('/analysis/correlation?sample_rate=50');
+  if(!d||!d.symbols)return;
+  const syms=d.symbols,data=d.matrix.flat().map(x=>[syms.indexOf(x.from),syms.indexOf(x.to),x.value]);
+  cc.setOption({tooltip:{formatter:p=>syms[p.data[0]]+' vs '+syms[p.data[1]]+': '+(p.data[2]*100).toFixed(1)+'%'},grid:{left:'10%',right:'5%',top:'5%',bottom:'10%'},
+    xAxis:{type:'category',data:syms.map(s=>CFG[s]?.n||s),axisLabel:{color:'#64748b',fontSize:10},position:'top'},
+    yAxis:{type:'category',data:syms.map(s=>CFG[s]?.n||s),axisLabel:{color:'#64748b',fontSize:10},inverse:1},
+    visualMap:{min:-1,max:1,calculable:1,orient:'vertical',right:'0',top:'center',inRange:{color:['#f43f5e','#0f1729','#10b981']},text:['+1','0','-1'],textStyle:{color:'#64748b'}},
+    series:[{type:'heatmap',data:data,label:{show:1,formatter:p=>p.data[2].toFixed(2),fontSize:11,fontWeight:'bold'},emphasis:{itemStyle:{shadowBlur:10,shadowColor:'rgba(0,0,0,.5)'}}}]},1);
+  const p=d.top_pairs||[];
+  $('corrPairs').innerHTML=p.map(x=>`<div style="padding:8px;border:1px solid var(--b);border-radius:8px;margin-bottom:6px;background:rgba(56,189,248,.02)"><div style="font-size:11px;color:var(--t);margin-bottom:4px">${x.name}</div><div style="font-size:18px;font-weight:700;color:${x.correlation>0?'var(--gr)':'var(--r)'}">${(x.correlation*100).toFixed(1)}%</div><div style="font-size:9px;color:#475569">${x.correlation>0.5?'强正相关':x.correlation>0?'弱正相关':x.correlation<-0.5?'强负相关':'弱负相关'}</div></div>`).join('')||'暂无数据';
+}
+loadCorr();setInterval(loadCorr,30000);
+
+tick();setInterval(tick,5000);
+</script>
+
+<!-- ===== AI 聊天组件 ===== -->
+<!-- 浮动按钮 -->
+<button class="ai-chat-btn" id="aiBtn" onclick="toggleChat()" title="AI 智能助手">
+  <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/><circle cx="8" cy="9" r="1.5"/><circle cx="12" cy="9" r="1.5"/><circle cx="16" cy="9" r="1.5"/></svg>
+</button>
+
+<!-- 聊天面板 -->
+<div class="ai-chat-panel" id="aiPanel" style="display:none">
+  <div class="ai-chat-header">
+    <span>🤖 AI 智能助手 <span style="font-size:10px;color:var(--t);font-weight:400;margin-left:6px">DeepSeek V4</span></span>
+    <div style="display:flex;gap:4px">
+      <button onclick="openApiKeySettings()" title="API Key 设置" style="font-size:14px">⚙</button>
+      <button onclick="toggleChat()" style="font-size:18px">✕</button>
+    </div>
+  </div>
+  <div class="ai-chat-body" id="aiBody">
+    <div class="ai-msg assistant">👋 你好！我是金融实时大数据分析平台的智能助手。
+
+我可以帮你：
+• 📊 解读行情数据与趋势
+• 📈 分析技术指标（SMA、OHLC、波动率等）
+• ⚠️ 评估风险指标（最大回撤、价差等）
+• 🔗 分析品种相关性
+• 🛠️ 解答大数据技术架构问题
+
+请先点击左上角 ⚙ 设置按钮配置 DeepSeek API Key，然后就可以开始提问了！</div>
+  </div>
+  <div class="ai-chat-input">
+    <input id="aiInput" placeholder="输入问题，按 Enter 发送..." onkeydown="if(event.key==='Enter')sendMsg()">
+    <button id="aiSendBtn" onclick="sendMsg()">➤</button>
+  </div>
+</div>
+
+<!-- API Key 设置弹窗 -->
+<div class="ai-modal" id="aiKeyModal" style="display:none">
+  <div class="ai-modal-content">
+    <h3>🔑 DeepSeek API Key 设置</h3>
+    <input id="apiKeyInput" type="password" placeholder="sk-xxxxxxxxxxxxxxxx">
+    <div class="btns">
+      <button class="btn-cancel" onclick="closeApiKeySettings()">取消</button>
+      <button class="btn-save" onclick="saveApiKey()">保存</button>
+    </div>
+    <div class="hint">💡 前往 <a href="https://platform.deepseek.com/api_keys" target="_blank" style="color:var(--a)">platform.deepseek.com</a> 获取 API Key<br>Key 将安全保存在服务器端，不会泄露</div>
+  </div>
+</div>
+
+<!-- AI Chat JS -->
+<script>
+// ---- AI Chat Logic ----
+const API_BASE = A.replace(/\/api.*/, '');  // http://192.168.128.130:8000
+let chatMessages = [];
+let hasApiKey = false;
+
+// 初始化：检查 API Key 状态
+(async function initChat(){
+  try {
+    const r = await fetch(API_BASE + '/api/config/apikey');
+    const d = await r.json();
+    hasApiKey = d.configured;
+  } catch(e) { hasApiKey = false; }
+})();
+
+function toggleChat(){
+  const p = document.getElementById('aiPanel');
+  const b = document.getElementById('aiBtn');
+  if (p.style.display === 'none' || !p.style.display){
+    p.style.display = 'flex';
+    b.style.display = 'none';
+  } else {
+    p.style.display = 'none';
+    b.style.display = 'flex';
+  }
+}
+
+function appendMsg(role, content){
+  const body = document.getElementById('aiBody');
+  const div = document.createElement('div');
+  div.className = 'ai-msg ' + role;
+  div.textContent = content;
+  body.appendChild(div);
+  body.scrollTop = body.scrollHeight;
+}
+
+function showTyping(){
+  const body = document.getElementById('aiBody');
+  const div = document.createElement('div');
+  div.className = 'ai-typing';
+  div.id = 'aiTyping';
+  div.innerHTML = '<span></span><span></span><span></span>';
+  body.appendChild(div);
+  body.scrollTop = body.scrollHeight;
+}
+
+function hideTyping(){
+  const el = document.getElementById('aiTyping');
+  if (el) el.remove();
+}
+
+function setSending(disabled){
+  document.getElementById('aiSendBtn').disabled = disabled;
+  document.getElementById('aiInput').disabled = disabled;
+}
+
+async function sendMsg(){
+  const input = document.getElementById('aiInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  // 检查 API Key
+  if (!hasApiKey) {
+    openApiKeySettings();
+    return;
+  }
+
+  appendMsg('user', msg);
+  input.value = '';
+  showTyping();
+  setSending(true);
+
+  chatMessages.push({role: 'user', content: msg});
+
+  try {
+    const r = await fetch(API_BASE + '/api/chat', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({messages: chatMessages})
+    });
+    const data = await r.json();
+    hideTyping();
+    setSending(false);
+
+    if (data.error) {
+      if (r.status === 401) {
+        hasApiKey = false;
+        openApiKeySettings();
+        // 移除刚才添加的用户消息
+        chatMessages.pop();
+        return;
+      }
+      appendMsg('assistant', '❌ ' + data.error);
+    } else if (data.reply) {
+      appendMsg('assistant', data.reply);
+      chatMessages.push({role: 'assistant', content: data.reply});
+    } else {
+      appendMsg('assistant', '❌ 未获取到回复，请稍后重试');
+    }
+  } catch(e) {
+    hideTyping();
+    setSending(false);
+    appendMsg('assistant', '❌ 网络错误，请确保 API 服务已启动 (端口 8000)');
+  }
+}
+
+function openApiKeySettings(){
+  document.getElementById('apiKeyInput').value = '';
+  document.getElementById('aiKeyModal').style.display = 'flex';
+  setTimeout(() => document.getElementById('apiKeyInput').focus(), 200);
+}
+
+function closeApiKeySettings(){
+  document.getElementById('aiKeyModal').style.display = 'none';
+}
+
+async function saveApiKey(){
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key) return;
+  if (!key.startsWith('sk-')) {
+    alert('API Key 格式不正确，应以 sk- 开头');
+    return;
+  }
+
+  try {
+    const r = await fetch(API_BASE + '/api/config/apikey', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({api_key: key})
+    });
+    const d = await r.json();
+    if (d.status === 'ok') {
+      hasApiKey = true;
+      closeApiKeySettings();
+      appendMsg('assistant', '✅ API Key 已成功配置！(' + d.masked + ')\n\n现在可以开始提问了，试试问我：\n• "当前哪些品种波动最大？"\n• "黄金和白银的价格相关性如何？"\n• "什么是最大回撤？如何计算？"');
+    } else {
+      alert('保存失败: ' + (d.detail || '未知错误'));
+    }
+  } catch(e) {
+    alert('保存失败，请检查 API 服务是否启动');
+  }
+}
+</script>
+
+</body>
+</html>

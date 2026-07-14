@@ -1,0 +1,35 @@
+# ===== 大数据文件 =====
+*.csv
+*.pkl
+*.joblib
+
+# ===== API Key 配置 =====
+config/apikey.txt
+
+# ===== Python =====
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# ===== Docker 数据卷 =====
+docker/lib/*.jar
+lib/
+
+# ===== 日志 =====
+logs/
+*.log
+
+# ===== 临时文件 =====
+/tmp/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ===== IDE =====
+.vscode/
+.idea/
+.trae/

@@ -1,0 +1,29 @@
+# ============================================================================
+# 金融实时大数据分析系统 - Python 依赖
+#
+# 安装方式:
+#   pip install -r requirements.txt
+#
+# 或使用清华镜像加速:
+#   pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+# ============================================================================
+
+# Kafka 客户端 (Producer 使用)
+kafka-python>=2.0.2
+
+# Elasticsearch 客户端 (Spark Streaming foreachBatch + FastAPI 使用)
+elasticsearch>=7.17.0,<8.0.0
+
+# FastAPI + Uvicorn (数据服务)
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
+
+# HTTP 客户端 (AI 聊天功能 — 调用 DeepSeek API)
+httpx>=0.24.0
+
+# ============================================================================
+# 可选依赖 (仅在宿主机不使用 Spark 容器时需要的本地环境)
+# 以下包已预装在 apache/spark:3.3.3 Docker 镜像中，无需安装:
+#   - pyspark
+#   - py4j
+# ============================================================================
