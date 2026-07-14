@@ -129,6 +129,9 @@ cd output && python3 -m http.server 3000 &
 
 ```
 dataBase/
+├── .claude/                            # Claude AI 辅助开发配置与项目上下文管理文件
+├── .gitignore                          # Git 版本控制忽略规则配置，过滤临时文件、日志及敏感数据
+├── dataBase/                           # 大数据环境部署配置、数据库初始化脚本及数据存储方案
 ├── src/python/                         # Python 源代码
 │   ├── finance_kafka_producer.py       # Kafka 生产者 (CSV→Kafka)
 │   ├── finance_spark_streaming.py      # Spark Streaming (Kafka→HDFS + OHLC)
@@ -138,17 +141,17 @@ dataBase/
 │   ├── hive/hive_ddl.sql               # Hive 四层数仓 DDL
 │   ├── logstash/kafka_to_es.conf       # Logstash 管道配置
 │   └── es_mapping.json                 # ES 索引映射
-├── scripts/                            # Shell 脚本
+├── scripts/                            # Shell 运维脚本
 │   ├── demo_restart.sh                 # 一键重启 (从零构建)
 │   ├── init_all.sh                     # 初始化所有组件
 │   ├── start_pipeline.sh               # 启动数据管道
 │   └── stop_pipeline.sh                # 停止数据管道
-├── docker/                             # Docker 编排
+├── docker/                             # Docker 容器编排
 │   └── docker-compose.yml              # 12 节点集群定义
-├── output/                             # 前端
+├── output/                             # 前端大屏
 │   └── finance_dashboard.html          # 可视化大屏 (纯HTML+ECharts)
-├── requirements.txt                    # Python 依赖
-└── README.md                           # 本文档
+├── requirements.txt                    # Python 依赖清单
+└── README.md                           # 项目说明文档
 ```
 
 ---
