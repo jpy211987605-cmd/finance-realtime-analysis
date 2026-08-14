@@ -9,19 +9,39 @@ import os
 import sys
 import time
 
-# ===== 配置 =====
-HOST = "192.168.128.130"
-USER = "jay"
-PASSWORD = "qwe123qwe"
-PORT = 22
+# ===== 配置（从环境变量 / deploy.env 读取，避免硬编码凭据）=====
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-LOCAL_BASE = r"D:\桌面\dataBase_03\dataBase"
-REMOTE_BASE = "/home/jay/dataBase_03/dataBase"
 
-# Sudo wrapper - auto-inject password via stdin
+def _load_deploy_env(path):
+    """从 deploy.env 读取 KEY=VALUE 到环境变量（已存在的环境变量优先）。"""
+    if not os.path.exists(path):
+        return
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, value = line.partition("=")
+            os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+
+
+_load_deploy_env(os.path.join(SCRIPT_DIR, "deploy.env"))
+
+HOST = os.environ.get("DEPLOY_HOST", "")
+PORT = int(os.environ.get("DEPLOY_PORT", "22"))
+USER = os.environ.get("DEPLOY_USER", "")
+PASSWORD = os.environ.get("DEPLOY_PASSWORD", "")
+SSH_KEY = os.environ.get("DEPLOY_SSH_KEY", "")
+LOCAL_BASE = os.environ.get("DEPLOY_LOCAL_BASE", "")
+REMOTE_BASE = os.environ.get("DEPLOY_REMOTE_BASE", "")
+
+# Sudo wrapper - 优先使用密码自动注入，未配置密码时走普通 sudo（密钥/NOPASSWD）
 def sudo(cmd):
-    """Wrap command with sudo password injection"""
-    return f"echo '{PASSWORD}' | sudo -S {cmd}"
+    """Wrap command with optional sudo password injection."""
+    if PASSWORD:
+        return f"echo '{PASSWORD}' | sudo -S {cmd}"
+    return f"sudo {cmd}"
 
 # 需要上传的文件 (本地相对路径 -> 远程绝对路径)
 FILES_TO_UPLOAD = {
@@ -32,14 +52,22 @@ FILES_TO_UPLOAD = {
 
 
 def ssh_connect():
-    """建立 SSH 连接"""
+    """建立 SSH 连接（优先使用私钥，其次使用密码）。"""
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     print(f"[SSH] Connecting to {USER}@{HOST}:{PORT} ...")
-    client.connect(
-        HOST, port=PORT, username=USER, password=PASSWORD,
-        timeout=30, allow_agent=False, look_for_keys=False
-    )
+
+    kwargs = {"port": PORT, "username": USER, "timeout": 30}
+    if SSH_KEY:
+        kwargs["key_filename"] = SSH_KEY
+        kwargs["allow_agent"] = False
+        kwargs["look_for_keys"] = False
+    elif PASSWORD:
+        kwargs["password"] = PASSWORD
+        kwargs["allow_agent"] = False
+        kwargs["look_for_keys"] = False
+
+    client.connect(HOST, **kwargs)
     print("  [OK] Connected")
     return client
 
@@ -87,6 +115,18 @@ def upload_file(client, local_path, remote_path):
 
 
 def main():
+    missing = [k for k, v in [
+        ("DEPLOY_HOST", HOST),
+        ("DEPLOY_USER", USER),
+        ("DEPLOY_LOCAL_BASE", LOCAL_BASE),
+        ("DEPLOY_REMOTE_BASE", REMOTE_BASE),
+    ] if not v]
+    if missing:
+        print("[ERROR] 缺少部署配置: " + ", ".join(missing))
+        print("请复制 dataBase/scripts/deploy.env.example 为 deploy.env 并填写，")
+        print("或通过环境变量提供上述配置后重试。")
+        sys.exit(1)
+
     print("=" * 56)
     print("  Finance Big Data Platform - Deploy (with AI Chat)")
     print(f"  Target: {USER}@{HOST}:{PORT}")
@@ -243,11 +283,11 @@ def main():
     print("  [DONE] Deployment complete!")
     print("")
     print("  URLs:")
-    print("    API Docs:     http://192.168.128.130:8000/docs")
+    print(f"    API Docs:     http://{HOST}:8000/docs")
     print("    Dashboard:    output/finance_dashboard.html")
-    print("    HDFS:         http://192.168.128.130:9870")
-    print("    Spark UI:     http://192.168.128.130:8080")
-    print("    Kibana:       http://192.168.128.130:5601")
+    print(f"    HDFS:         http://{HOST}:9870")
+    print(f"    Spark UI:     http://{HOST}:8080")
+    print(f"    Kibana:       http://{HOST}:5601")
     print("")
     print("  AI Chat: Open dashboard -> bottom-right button -> Settings -> Set Key")
     print("=" * 56)

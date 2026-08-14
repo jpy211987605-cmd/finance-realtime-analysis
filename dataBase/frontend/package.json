@@ -1,8 +1,21 @@
 {
   "name": "finance-realtime-dashboard",
   "version": "1.0.0",
-  "description": "金融实时数据分析大屏",
+  "description": "金融实时数据分析大屏 - 基于 Vue 3 + ECharts",
+  "private": true,
   "type": "module",
+  "license": "MIT",
+  "author": "jpy211987605-cmd",
+  "keywords": [
+    "finance",
+    "realtime",
+    "dashboard",
+    "kafka",
+    "spark",
+    "elasticsearch",
+    "echarts",
+    "vue"
+  ],
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 3000",
     "build": "vite build",

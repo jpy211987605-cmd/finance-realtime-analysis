@@ -1,0 +1,25 @@
+# Git 属性：统一换行符与二进制文件识别，避免 Windows/Linux 交叉污染
+
+* text=auto
+
+# ---------- 文本文件 ----------
+*.py   text eol=lf
+*.sh   text eol=lf
+*.md   text eol=lf
+*.sql  text eol=lf
+*.json text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.js   text eol=lf
+*.vue  text eol=lf
+*.html text eol=lf
+*.css  text eol=lf
+*.conf text eol=lf
+*.bat  text eol=crlf
+
+# ---------- 二进制 / 生成文件 ----------
+*.jar     binary
+*.pkl     binary
+*.joblib  binary
+*.csv     binary
+*.min.js  binary

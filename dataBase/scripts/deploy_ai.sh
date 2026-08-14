@@ -2,14 +2,32 @@
 # ============================================================================
 # AI 智能对话功能部署脚本
 # 传输修改文件到 Ubuntu 并重启服务
+#
+# 连接配置放在同目录 deploy.env（模板见 deploy.env.example）：
+#   DEPLOY_HOST / DEPLOY_PORT / DEPLOY_USER
+#   DEPLOY_SSH_KEY（推荐，私钥登录）或交互式密码
+#   DEPLOY_LOCAL_BASE / DEPLOY_REMOTE_BASE
 # ============================================================================
 
 set -e
 
-UBUNTU_IP="192.168.128.130"
-UBUNTU_USER="root"
-PROJECT_DIR="/root/dataBase_03/dataBase"
-LOCAL_DIR="D:\桌面\dataBase_03\dataBase"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# 读取同目录 deploy.env（若存在）
+if [ -f "$SCRIPT_DIR/deploy.env" ]; then
+  # shellcheck disable=SC1090
+  . "$SCRIPT_DIR/deploy.env"
+fi
+
+UBUNTU_IP="${DEPLOY_HOST:?请在 deploy.env 中设置 DEPLOY_HOST（Ubuntu 服务器 IP）}"
+UBUNTU_USER="${DEPLOY_USER:?请在 deploy.env 中设置 DEPLOY_USER（登录用户名）}"
+PROJECT_DIR="${DEPLOY_REMOTE_BASE:?请在 deploy.env 中设置 DEPLOY_REMOTE_BASE（Ubuntu 上的 dataBase 目录）}"
+LOCAL_DIR="${DEPLOY_LOCAL_BASE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+
+SSH_OPTS=(-o StrictHostKeyChecking=no)
+if [ -n "${DEPLOY_SSH_KEY:-}" ]; then
+  SSH_OPTS+=(-i "$DEPLOY_SSH_KEY")
+fi
 
 echo "============================================"
 echo "  金融大数据平台 - AI 功能部署"
@@ -33,7 +51,7 @@ for FILE in "${FILES_TO_UPLOAD[@]}"; do
 
     if [ -f "$LOCAL_PATH" ]; then
         echo "  上传: $FILE"
-        scp -o StrictHostKeyChecking=no "$LOCAL_PATH" "${UBUNTU_USER}@${UBUNTU_IP}:${REMOTE_PATH}"
+        scp "${SSH_OPTS[@]}" "$LOCAL_PATH" "${UBUNTU_USER}@${UBUNTU_IP}:${REMOTE_PATH}"
         echo "    ✓ 完成"
     else
         echo "    ✗ 文件不存在: $LOCAL_PATH"
@@ -45,14 +63,16 @@ echo ""
 echo "[2/4] SSH 到 Ubuntu 安装依赖..."
 echo "------------------------------------------"
 
-ssh -o StrictHostKeyChecking=no ${UBUNTU_USER}@${UBUNTU_IP} bash << 'REMOTE_SCRIPT'
+ssh "${SSH_OPTS[@]}" ${UBUNTU_USER}@${UBUNTU_IP} bash -s -- "$PROJECT_DIR" "$UBUNTU_IP" << 'REMOTE_SCRIPT'
 set -e
+PROJECT_DIR="$1"
+UBUNTU_IP="$2"
 
 echo "  当前目录: $(pwd)"
 echo "  主机名: $(hostname)"
 
 # 切换到项目目录
-cd /root/dataBase_03/dataBase
+cd "$PROJECT_DIR"
 echo "  项目目录: $(pwd)"
 
 # 安装 Python 依赖 (httpx for AI chat)
@@ -75,7 +95,7 @@ fi
 echo "  Docker 状态: $(docker info --format '{{.ServerVersion}}' 2>/dev/null || echo '未运行')"
 
 # 启动 Docker Compose 集群
-cd /root/dataBase_03/dataBase/docker
+cd "$PROJECT_DIR/docker"
 
 echo "  检查容器状态..."
 RUNNING_COUNT=$(docker compose ps --format json 2>/dev/null | grep -c '"State":"running"' 2>/dev/null || echo 0)
@@ -96,7 +116,7 @@ fi
 # 初始化 (Kafka Topic + HDFS + Hive + ES)
 echo ""
 echo "  [3.1] 检查初始化状态..."
-cd /root/dataBase_03/dataBase
+cd "$PROJECT_DIR"
 
 # 检查 Kafka Topics
 KAFKA_TOPICS=$(docker exec kafka kafka-topics --list --bootstrap-server localhost:9092 2>/dev/null | wc -l)
@@ -121,7 +141,7 @@ sleep 2
 
 # 启动 Kafka Producer (后台)
 echo "  启动 Kafka Producer..."
-cd /root/dataBase_03/dataBase
+cd "$PROJECT_DIR"
 nohup python src/python/finance_kafka_producer.py --rate 5 --loop > /tmp/producer.log 2>&1 &
 echo "    Producer PID: $!"
 
@@ -140,7 +160,7 @@ echo "    Spark PID: $!"
 
 # 启动 FastAPI (含 AI 对话)
 echo "  启动 FastAPI (含 AI 对话)..."
-cd /root/dataBase_03/dataBase
+cd "$PROJECT_DIR"
 nohup python src/python/finance_api_server.py > /tmp/api_server.log 2>&1 &
 API_PID=$!
 echo "    API PID: $API_PID"
@@ -183,12 +203,12 @@ echo "============================================"
 echo "  ✓ 部署完成！"
 echo ""
 echo "  访问地址:"
-echo "    API 文档:     http://192.168.128.130:8000/docs"
+echo "    API 文档:     http://${UBUNTU_IP}:8000/docs"
 echo "    可视化大屏:   打开 output/finance_dashboard.html"
-echo "    HDFS UI:      http://192.168.128.130:9870"
-echo "    Spark UI:     http://192.168.128.130:8080"
-echo "    ES:           http://192.168.128.130:9200"
-echo "    Kibana:       http://192.168.128.130:5601"
+echo "    HDFS UI:      http://${UBUNTU_IP}:9870"
+echo "    Spark UI:     http://${UBUNTU_IP}:8080"
+echo "    ES:           http://${UBUNTU_IP}:9200"
+echo "    Kibana:       http://${UBUNTU_IP}:5601"
 echo ""
 echo "  AI 对话: 打开大屏 → 点击右下角按钮 → 设置 Key"
 echo "============================================"
