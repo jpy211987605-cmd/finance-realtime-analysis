@@ -10,7 +10,7 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/jpy211987605-cmd/finance-realtime-analysis.git
+git clone https://github.com/JayChin0129/finance-realtime-analysis.git
 cd finance-realtime-analysis
 
 # 安装 Python 依赖

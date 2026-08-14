@@ -2,9 +2,9 @@
 
 <div align="center">
 
-[![License](https://img.shields.io/github/license/jpy211987605-cmd/finance-realtime-analysis?style=flat-square&color=blue)](LICENSE)
-[![Last Commit](https://img.shields.io/github/last-commit/jpy211987605-cmd/finance-realtime-analysis?style=flat-square&color=green)](https://github.com/jpy211987605-cmd/finance-realtime-analysis/commits)
-[![Repo Size](https://img.shields.io/github/repo-size/jpy211987605-cmd/finance-realtime-analysis?style=flat-square&color=orange)](https://github.com/jpy211987605-cmd/finance-realtime-analysis)
+[![License](https://img.shields.io/github/license/JayChin0129/finance-realtime-analysis?style=flat-square&color=blue)](LICENSE)
+[![Last Commit](https://img.shields.io/github/last-commit/JayChin0129/finance-realtime-analysis?style=flat-square&color=green)](https://github.com/JayChin0129/finance-realtime-analysis/commits)
+[![Repo Size](https://img.shields.io/github/repo-size/JayChin0129/finance-realtime-analysis?style=flat-square&color=orange)](https://github.com/JayChin0129/finance-realtime-analysis)
 
 **基于 Docker 12 节点集群构建的金融实时行情分析平台**
 
@@ -112,7 +112,7 @@ docker compose version
 ### 2. 获取代码
 
 ```bash
-git clone https://github.com/jpy211987605-cmd/finance-realtime-analysis.git
+git clone https://github.com/JayChin0129/finance-realtime-analysis.git
 cd finance-realtime-analysis/dataBase
 ```
 
@@ -302,4 +302,4 @@ finance-realtime-analysis/
 
 ## 🙋 联系方式
 
-如有问题或建议，欢迎提交 [Issue](https://github.com/jpy211987605-cmd/finance-realtime-analysis/issues) 或 Pull Request。
+如有问题或建议，欢迎提交 [Issue](https://github.com/JayChin0129/finance-realtime-analysis/issues) 或 Pull Request。
